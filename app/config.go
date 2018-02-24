@@ -11,7 +11,8 @@ type Config struct {
 	HttpConf   utils.HttpConfig   `json:"http"`
 	LogConf    utils.LogConfig    `json:"log"`
 	ConsulConf utils.ConsulConfig `json:"consul"`
-	PprofConf  utils.PprofConfig  `json:"pprof"`
+	//PprofConf  utils.PprofConfig  `json:"pprof"`
+	VfConf utils.VfConfig `json:"vf"`
 }
 
 func ReadConf(config Config, filePath string) (err error) {
@@ -25,4 +26,5 @@ func ReadConf(config Config, filePath string) (err error) {
 		fmt.Printf("parse config file %s error: %v\n", filePath, err)
 		return
 	}
+	return
 }

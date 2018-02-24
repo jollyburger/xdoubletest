@@ -15,9 +15,9 @@ type StartPerfRequest struct {
 }
 
 type StartUnitRequest struct {
-	NameSpace string `http:"service"`
-	Image     string `http:"image"`
-	Tag       string `http:"tag"`
+	App    string `http:"app"`
+	Router string `http:"router"`
+	Cmd    string `http:"cmd"`
 }
 
 func checkStartPerfRequest(req StartPerfRequest) bool {
@@ -42,9 +42,9 @@ func ParseStartPerfRequest(req *http.Request) (perfReq StartPerfRequest, err err
 }
 
 func checkStartUnitRequest(req StartUnitRequest) bool {
-	if req.NameSpace == "" ||
-		req.Image == "" ||
-		req.Tag == "" {
+	if req.App == "" ||
+		req.Router == "" ||
+		req.Cmd == "" {
 		return false
 	}
 	return true

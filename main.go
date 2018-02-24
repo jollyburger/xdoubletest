@@ -4,6 +4,7 @@ import (
 	"flag"
 	"xdoubletest/app"
 	"xdoubletest/logic/service"
+	"xdoubletest/utils"
 )
 
 var (
@@ -24,7 +25,7 @@ func main() {
 	utils.InitConsul(config.ConsulConf)
 	httpConf := utils.InitHttp(config.HttpConf)
 	//start service
-	if err := service.Run(httpConf.Addr(), httpConf.ReadTimeout(), httpConf.WriteTimeout()); err != nil {
+	if err := service.Run(httpConf.Addr(), httpConf.ReadTimeout, httpConf.WriteTimeout); err != nil {
 		panic(err)
 	}
 }

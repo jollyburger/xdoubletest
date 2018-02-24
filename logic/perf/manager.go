@@ -14,6 +14,7 @@ type PerfManager struct {
 func InitPerfManager() *PerfManager {
 	this := new(PerfManager)
 	this.Tasks = make(map[string]*DefaultPerf)
+	return this
 }
 
 func (this *PerfManager) add(perf *DefaultPerf) {
@@ -24,8 +25,8 @@ func (this *PerfManager) add(perf *DefaultPerf) {
 
 func (this *PerfManager) remove(tid string) {
 	this.Lock()
-	if _, ok := this.Tasks[tid]; ok {
-		perf.Stop()
+	if t, ok := this.Tasks[tid]; ok {
+		t.Stop()
 		delete(this.Tasks, tid)
 	}
 	this.Unlock()

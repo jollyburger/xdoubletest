@@ -2,10 +2,13 @@ package perf
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"sync"
+	"time"
 	"xframe/log"
 	"xframe/utils"
 )
@@ -26,7 +29,7 @@ type DefaultPerf struct {
 	Url     string
 	Body    []byte
 	stopChs []chan struct{}
-	results []chan Result
+	results chan Result
 }
 
 func initDefaultPerf(number uint32, cc int, qps int, method string, url string, body []byte) *DefaultPerf {
@@ -38,17 +41,19 @@ func initDefaultPerf(number uint32, cc int, qps int, method string, url string, 
 	this.Method = method
 	this.Url = url
 	this.Body = body
-	this.stopCh = make([]chan struct{}, this.Cc)
-	this.results = make([]chan Result, this.Number)
+	this.stopChs = make([]chan struct{}, this.Cc)
+	this.results = make(chan Result, this.Number)
+	return this
 }
 
-func (this *DefaultPerf) makeRequest() (http.Request, error) {
+func (this *DefaultPerf) makeRequest() (*http.Request, error) {
 	if this.Method == "GET" {
 		return http.NewRequest(this.Method, this.Url, nil)
 	} else if this.Method == "POST" {
 		buf := bytes.NewBuffer(this.Body)
 		return http.NewRequest(this.Method, this.Url, buf)
 	}
+	return nil, errors.New("method error")
 }
 
 func (this *DefaultPerf) DoRequest(client http.Client) {
@@ -57,7 +62,11 @@ func (this *DefaultPerf) DoRequest(client http.Client) {
 	var code int
 	var dnsStart, connStart, resStart, reqStart, delayStart time.Time
 	var dnsDuration, connDuration, resDuration, reqDuration, delayDuration time.Duration
-	req := this.makeRequest()
+	req, err := this.makeRequest()
+	if err != nil {
+		log.ERRORF("make request error: %v", err)
+		return
+	}
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(info httptrace.DNSStartInfo) {
 			dnsStart = time.Now()
@@ -107,12 +116,12 @@ func (this *DefaultPerf) DoRequest(client http.Client) {
 
 func (this *DefaultPerf) runWorker(n uint32, stopCh chan struct{}) {
 	var counter uint32
-	tick := time.Tick(time.Duration(1000/this.Qps) * time.MilliSecond)
+	tick := time.Tick(time.Duration(1000/this.Qps) * time.Millisecond)
 	cli := http.Client{}
 	for {
 		select {
 		case <-tick:
-			couter++
+			counter++
 			if counter == n {
 				return
 			}
@@ -162,20 +171,22 @@ func (this *DefaultPerf) Report() interface{} {
 
 func (this *DefaultPerf) Start() (interface{}, error) {
 	//split into cc worker with number / cc request
-	sync.Add(this.Cc)
+	var wg sync.WaitGroup
+	wg.Add(this.Cc)
 	for i := 0; i < this.Cc; i++ {
 		go func() {
 			this.runWorker(this.Number/uint32(this.Cc), this.stopChs[i])
-			sync.Done()
+			wg.Done()
 		}()
 	}
-	sync.Wait()
+	wg.Wait()
 	close(this.results)
 	return this.Report(), nil
 }
 
 func (this *DefaultPerf) Stop() error {
-	for ch := range this.stopChs {
+	for _, ch := range this.stopChs {
 		go close(ch)
 	}
+	return nil
 }

@@ -12,9 +12,9 @@ type HttpConfig struct {
 	WriteTimeout int    `json:"write_timeout"`
 }
 
-func (this HttpConfig) Addr() (addr string, err error) {
+func (this HttpConfig) Addr() (addr string) {
 	var ip string
-	ip, err = server.ParseListenAddr(this.Address)
+	ip, err := server.ParseListenAddr(this.Address)
 	if err != nil {
 		return
 	}
@@ -34,4 +34,5 @@ func InitHttp(conf HttpConfig) HttpConfig {
 		httpConfig.WriteTimeout == 0 {
 		panic("http server configure error")
 	}
+	return httpConfig
 }
