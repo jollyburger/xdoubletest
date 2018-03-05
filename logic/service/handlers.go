@@ -19,7 +19,9 @@ func start_perf(r *http.Request) (interface{}, int) {
 		log.ERRORF("[start_perf]perf task error: %v", err)
 		return nil, PERF_TASK_ERROR
 	}
-	log.INFOF("[start_perf]complete start perf request")
+	log.DEBUGF("[start_perf]perf manager task list length: %d", perf.GperfManager.TasksLength())
+	perf.GperfManager.DumpTasks()
+	log.INFOF("[start_perf]complete start perf request: %v", data)
 	return data, SUCCESS
 }
 

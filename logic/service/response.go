@@ -28,7 +28,6 @@ func DoBaseResponse(rw http.ResponseWriter, retCode int) {
 		return
 	}
 	rw.Write(buf)
-
 }
 
 func DoDataResponse(rw http.ResponseWriter, retCode int, data interface{}) {

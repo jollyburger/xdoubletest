@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
+	"sort"
 	"sync"
 	"time"
 	"xframe/log"
@@ -116,16 +117,18 @@ func (this *DefaultPerf) DoRequest(client http.Client) {
 
 func (this *DefaultPerf) runWorker(n uint32, stopCh chan struct{}) {
 	var counter uint32
-	tick := time.Tick(time.Duration(1000/this.Qps) * time.Millisecond)
+	tick := time.NewTicker(time.Duration(1000/this.Qps) * time.Millisecond)
+	defer tick.Stop()
 	cli := http.Client{}
 	for {
 		select {
-		case <-tick:
+		case <-tick.C:
 			counter++
 			if counter == n {
+				log.DEBUG("counter hit, stop")
 				return
 			}
-			go this.DoRequest(cli)
+			this.DoRequest(cli)
 		case <-stopCh:
 			log.DEBUG("receive stop signal")
 			return
@@ -133,19 +136,19 @@ func (this *DefaultPerf) runWorker(n uint32, stopCh chan struct{}) {
 	}
 }
 
-func (this *DefaultPerf) Report() interface{} {
-	var r Report
+func (this *DefaultPerf) Report(t time.Duration) interface{} {
+	r := InitReport(t)
 	for res := range this.results {
 		if res.err != nil {
-			r.errorDist[res.err.Error()]++
+			r.ErrorDist[res.err.Error()]++
 		} else {
 			r.lats = append(r.lats, res.duration.Seconds())
 			r.avgTotal += res.duration.Seconds()
-			r.avgConn += res.connDuration.Seconds()
-			r.avgDelay += res.delayDuration.Seconds()
-			r.avgDns += res.dnsDuration.Seconds()
-			r.avgReq += res.reqDuration.Seconds()
-			r.avgRes += res.resDuration.Seconds()
+			r.AvgConn += res.connDuration.Seconds()
+			r.AvgDelay += res.delayDuration.Seconds()
+			r.AvgDns += res.dnsDuration.Seconds()
+			r.AvgReq += res.reqDuration.Seconds()
+			r.AvgRes += res.resDuration.Seconds()
 			r.connLats = append(r.connLats, res.connDuration.Seconds())
 			r.dnsLats = append(r.dnsLats, res.dnsDuration.Seconds())
 			r.reqLats = append(r.reqLats, res.reqDuration.Seconds())
@@ -153,40 +156,46 @@ func (this *DefaultPerf) Report() interface{} {
 			r.resLats = append(r.resLats, res.resDuration.Seconds())
 			r.statusCodeDist[res.statusCode]++
 			if res.contentLength > 0 {
-				r.sizeTotal += res.contentLength
+				r.SizeTotal += res.contentLength
 			}
 		}
 	}
-	r.rps = float64(len(r.lats)) / r.total.Seconds()
-	r.average = r.avgTotal / float64(len(r.lats))
-	r.avgConn = r.avgConn / float64(len(r.lats))
-	r.avgDelay = r.avgDelay / float64(len(r.lats))
-	r.avgDns = r.avgDns / float64(len(r.lats))
-	r.avgReq = r.avgReq / float64(len(r.lats))
-	r.avgRes = r.avgRes / float64(len(r.lats))
-	r.fastest = r.lats[0]
-	r.slowest = r.lats[len(r.lats)-1]
+	r.Rps = float64(len(r.lats)) / r.total.Seconds()
+	r.Average = r.avgTotal / float64(len(r.lats))
+	r.AvgConn = r.AvgConn / float64(len(r.lats))
+	r.AvgDelay = r.AvgDelay / float64(len(r.lats))
+	r.AvgDns = r.AvgDns / float64(len(r.lats))
+	r.AvgReq = r.AvgReq / float64(len(r.lats))
+	r.AvgRes = r.AvgRes / float64(len(r.lats))
+	if len(r.lats) != 0 {
+		sort.Float64s(r.lats)
+		r.Fastest = r.lats[0]
+		r.Slowest = r.lats[len(r.lats)-1]
+	}
 	return r
 }
 
 func (this *DefaultPerf) Start() (interface{}, error) {
 	//split into cc worker with number / cc request
+	start := time.Now()
 	var wg sync.WaitGroup
 	wg.Add(this.Cc)
 	for i := 0; i < this.Cc; i++ {
-		go func() {
+		go func(i int) {
 			this.runWorker(this.Number/uint32(this.Cc), this.stopChs[i])
 			wg.Done()
-		}()
+		}(i)
 	}
 	wg.Wait()
 	close(this.results)
-	return this.Report(), nil
+	return this.Report(time.Now().Sub(start)), nil
 }
 
 func (this *DefaultPerf) Stop() error {
 	for _, ch := range this.stopChs {
-		go close(ch)
+		if ch != nil {
+			go close(ch)
+		}
 	}
 	return nil
 }

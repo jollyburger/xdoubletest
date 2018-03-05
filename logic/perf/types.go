@@ -16,24 +16,38 @@ type Result struct {
 }
 
 type Report struct {
-	avgTotal       float64
-	fastest        float64 `json:"fastest"`
-	slowest        float64 `json:"slowest"`
-	average        float64 `json:"average"`
-	rps            float64 `json:"rps"`
-	avgConn        float64 `json:"dns_dial"`
-	avgDns         float64 `json:"dns_lookup"`
-	avgReq         float64 `json:"req_write_avg"`
-	avgRes         float64 `json:"res_read_avg"`
-	avgDelay       float64 `json:"res_wait_avg"`
-	connLats       []float64
-	dnsLats        []float64
-	reqLats        []float64
-	resLats        []float64
-	delayLats      []float64
-	total          time.Duration
-	errorDist      map[string]int `json:"error"`
-	statusCodeDist map[int]int
-	lats           []float64
-	sizeTotal      int64 `json:"size_total"`
+	avgTotal       float64        `json:"-"`
+	Fastest        float64        `json:"fastest"`
+	Slowest        float64        `json:"slowest"`
+	Average        float64        `json:"average"`
+	Rps            float64        `json:"rps"`
+	AvgConn        float64        `json:"dns_dial"`
+	AvgDns         float64        `json:"dns_lookup"`
+	AvgReq         float64        `json:"req_write_avg"`
+	AvgRes         float64        `json:"res_read_avg"`
+	AvgDelay       float64        `json:"res_wait_avg"`
+	connLats       []float64      `json:"-"`
+	dnsLats        []float64      `json:"-"`
+	reqLats        []float64      `json:"-"`
+	resLats        []float64      `json:"-"`
+	delayLats      []float64      `json:"-"`
+	total          time.Duration  `json:"-"`
+	ErrorDist      map[string]int `json:"error"`
+	statusCodeDist map[int]int    `json:"-"`
+	lats           []float64      `json:"-"`
+	SizeTotal      int64          `json:"size_total"`
+}
+
+func InitReport(t time.Duration) Report {
+	var r Report
+	r.total = t
+	r.ErrorDist = make(map[string]int)
+	r.statusCodeDist = make(map[int]int)
+	r.connLats = make([]float64, 0)
+	r.dnsLats = make([]float64, 0)
+	r.reqLats = make([]float64, 0)
+	r.resLats = make([]float64, 0)
+	r.delayLats = make([]float64, 0)
+	r.lats = make([]float64, 0)
+	return r
 }

@@ -15,13 +15,13 @@ type Config struct {
 	VfConf utils.VfConfig `json:"vf"`
 }
 
-func ReadConf(config Config, filePath string) (err error) {
+func ReadConf(config *Config, filePath string) (err error) {
 	confBuf, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		fmt.Printf("load config file %s error: %v\n", filePath, err)
 		return
 	}
-	err = json.Unmarshal(confBuf, &config)
+	err = json.Unmarshal(confBuf, config)
 	if err != nil {
 		fmt.Printf("parse config file %s error: %v\n", filePath, err)
 		return

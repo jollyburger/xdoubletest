@@ -1,0 +1,17 @@
+{
+	"http": {
+		"address": "",
+		"port": 0,
+		"read_timeout": 0,
+		"write_timeout": 0
+	},
+	"log": {
+		"log_level": "DEBUG"
+	},
+	"consul": {
+		"timer_task": ""
+	},
+	"vf": {
+		"addr": ""
+	}
+}

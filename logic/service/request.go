@@ -3,11 +3,12 @@ package service
 import (
 	"errors"
 	"net/http"
+	"xframe/log"
 )
 
 type StartPerfRequest struct {
 	Number      uint32 `http:"number"`
-	Concurrency int    `http:"cc"`
+	Concurrency int    `http:"concurrency"`
 	Qps         int    `http:"qps"`
 	Method      string `http:"method"`
 	Url         string `http:"url"`
@@ -32,6 +33,7 @@ func checkStartPerfRequest(req StartPerfRequest) bool {
 
 func ParseStartPerfRequest(req *http.Request) (perfReq StartPerfRequest, err error) {
 	err = parsePostRequest(req, &perfReq)
+	log.DEBUG(perfReq)
 	if err != nil {
 		return
 	}
